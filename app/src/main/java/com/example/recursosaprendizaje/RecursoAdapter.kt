@@ -3,14 +3,18 @@ package com.example.recursosaprendizaje
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import java.util.Locale
 
-class RecursoAdapter(private var recursos: List<Recurso>) :
-    RecyclerView.Adapter<RecursoAdapter.RecursoViewHolder>() {
+class RecursoAdapter(private var recursos: List<Recurso>,
+                     private val onEditar: (Recurso) -> Unit,
+                     private val onItemClick: (Recurso) -> Unit,
+
+                     private val onEliminar: (Recurso) -> Unit) : RecyclerView.Adapter<RecursoAdapter.RecursoViewHolder>() {
 
     private var recursosFiltrados: List<Recurso> = recursos
 
@@ -20,6 +24,8 @@ class RecursoAdapter(private var recursos: List<Recurso>) :
         val tipo: TextView = itemView.findViewById(R.id.tipo)
         val enlace: TextView = itemView.findViewById(R.id.enlace)
         val imagen: ImageView = itemView.findViewById(R.id.imagen)
+        val btnEditar: Button = itemView.findViewById(R.id.btnEditar)
+        val btnEliminar: Button = itemView.findViewById(R.id.btnEliminar)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecursoViewHolder {
@@ -37,6 +43,21 @@ class RecursoAdapter(private var recursos: List<Recurso>) :
 
         // Usar Glide para cargar la imagen desde la URL
         Glide.with(holder.itemView.context).load(recurso.imagen).into(holder.imagen)
+
+        // Botón Eliminar
+        holder.btnEliminar.setOnClickListener {
+            onEliminar(recurso)
+        }
+
+        // Botón Editar
+        holder.btnEditar.setOnClickListener {
+            onEditar(recurso)  // Llama a la función onEditar cuando se haga clic en Editar
+        }
+
+        // Manejar clic en el item completo
+        holder.itemView.setOnClickListener {
+            onItemClick(recurso)  // Pasar el recurso seleccionado a la lambda
+        }
     }
 
     override fun getItemCount(): Int = recursosFiltrados.size

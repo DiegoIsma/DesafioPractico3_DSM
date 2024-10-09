@@ -1,5 +1,6 @@
 package com.example.recursosaprendizaje
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
@@ -7,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.appcompat.widget.SearchView
+import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.Call
@@ -20,31 +22,32 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recursoAdapter: RecursoAdapter
     private var recursosList = mutableListOf<Recurso>()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        recyclerView = findViewById(R.id.recyclerView)  // Asegúrate de que este ID coincida con tu layout XML
-        searchView = findViewById(R.id.searchView)      // Obtener referencia al SearchView
-        recyclerView.layoutManager = LinearLayoutManager(this)  // Inicializar el layout manager
+        recyclerView = findViewById(R.id.recyclerView)
+        searchView = findViewById(R.id.searchView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://6701b49fb52042b542d86557.mockapi.io/") // URL base de la API
+            .baseUrl("https://6701b49fb52042b542d86557.mockapi.io/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         apiService = retrofit.create(ApiService::class.java)
 
         getRecursosFromApi()
 
-        // Configuración del SearchView
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                recursoAdapter.filter(newText)  // Llama al método filter aquí
+                recursoAdapter.filter(newText)
                 return true
             }
         })
@@ -54,8 +57,14 @@ class MainActivity : AppCompatActivity() {
         apiService.getAllRecursos().enqueue(object : Callback<List<Recurso>> {
             override fun onResponse(call: Call<List<Recurso>>, response: Response<List<Recurso>>) {
                 if (response.isSuccessful) {
-                    recursosList = response.body()?.toMutableList() ?: mutableListOf()
-                    recursoAdapter = RecursoAdapter(recursosList)  // Asignar el adaptador aquí
+                    val recursos = response.body() ?: emptyList()
+                    recursoAdapter = RecursoAdapter(recursos,
+                        onEditar = { recurso -> editarRecurso(recurso) },  // Aquí llamas a la función para editar
+                        onItemClick = { recurso -> // No lo estás usando aún
+                            // Acciones para clic en el item completo
+                        },
+                        onEliminar = { recurso -> eliminarRecurso(recurso) }
+                    )
                     recyclerView.adapter = recursoAdapter
                 } else {
                     Log.e("MainActivity", "Error en la respuesta de la API: ${response.code()}")
@@ -64,6 +73,27 @@ class MainActivity : AppCompatActivity() {
 
             override fun onFailure(call: Call<List<Recurso>>, t: Throwable) {
                 Log.e("MainActivity", "Error al cargar recursos", t)
+            }
+        })
+    }
+    private fun editarRecurso(recurso: Recurso) {
+        val intent = Intent(this, EditRecursoActivity::class.java)
+        intent.putExtra("RECURSO", recurso)
+        startActivity(intent)
+    }
+
+    private fun eliminarRecurso(recurso: Recurso) {
+        apiService.deleteRecurso(recurso.id).enqueue(object : Callback<ResponseBody> {  // Cambiar aquí
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.isSuccessful) {
+                    getRecursosFromApi()  // Refrescar la lista tras eliminar
+                } else {
+                    Log.e("MainActivity", "Error al eliminar el recurso: ${response.code()}")
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.e("MainActivity", "Error al eliminar el recurso", t)
             }
         })
     }
