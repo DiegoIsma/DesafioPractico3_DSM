@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.appcompat.widget.SearchView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchView: SearchView
     private lateinit var recursoAdapter: RecursoAdapter
+    private lateinit var fabAdd: FloatingActionButton
     private var recursosList = mutableListOf<Recurso>()
 
 
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerView)
         searchView = findViewById(R.id.searchView)
+        fabAdd = findViewById(R.id.fabAdd)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         val retrofit = Retrofit.Builder()
@@ -51,6 +54,14 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+        fabAdd.setOnClickListener {
+            val intent = Intent(this, AddRecursoActivity::class.java)
+            startActivity(intent)
+        }
+    }
+    override fun onResume() {
+        super.onResume()
+        getRecursosFromApi()
     }
 
     private fun getRecursosFromApi() {
@@ -59,9 +70,9 @@ class MainActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     val recursos = response.body() ?: emptyList()
                     recursoAdapter = RecursoAdapter(recursos,
-                        onEditar = { recurso -> editarRecurso(recurso) },  // Aquí llamas a la función para editar
-                        onItemClick = { recurso -> // No lo estás usando aún
-                            // Acciones para clic en el item completo
+                        onEditar = { recurso -> editarRecurso(recurso) },
+                        onItemClick = { recurso ->
+
                         },
                         onEliminar = { recurso -> eliminarRecurso(recurso) }
                     )
@@ -83,10 +94,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun eliminarRecurso(recurso: Recurso) {
-        apiService.deleteRecurso(recurso.id).enqueue(object : Callback<ResponseBody> {  // Cambiar aquí
+        apiService.deleteRecurso(recurso.id).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.isSuccessful) {
-                    getRecursosFromApi()  // Refrescar la lista tras eliminar
+                    getRecursosFromApi()
                 } else {
                     Log.e("MainActivity", "Error al eliminar el recurso: ${response.code()}")
                 }

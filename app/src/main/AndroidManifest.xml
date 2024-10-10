@@ -13,6 +13,8 @@
         android:theme="@style/Theme.RecursosAprendizaje"
         tools:targetApi="31">
         <activity android:name=".EditRecursoActivity"></activity>
+        <activity android:name=".AddRecursoActivity" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
